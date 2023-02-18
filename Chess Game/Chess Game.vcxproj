@@ -131,10 +131,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\lib\x64\SDL2.dll" />
+    <None Include="..\..\..\..\..\SDL2_image-devel-2.6.3-VC\lib\x64\SDL2_image.dll" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\lib\x64\SDL2.lib" />
     <Library Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\lib\x64\SDL2main.lib" />
+    <Library Include="..\..\..\..\..\SDL2_image-devel-2.6.3-VC\lib\x64\SDL2_image.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
