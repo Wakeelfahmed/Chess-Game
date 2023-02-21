@@ -18,6 +18,12 @@
     <ClCompile Include="Source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\include\SDL2_gfxPrimitives.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\include\SDL2_rotozoom.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\lib\x64\SDL2.dll" />
@@ -27,5 +33,13 @@
     <Library Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\lib\x64\SDL2.lib" />
     <Library Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\lib\x64\SDL2main.lib" />
     <Library Include="..\..\..\..\..\SDL2_image-devel-2.6.3-VC\lib\x64\SDL2_image.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\include\SDL2_rotozoom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\..\SDL2-devel-2.26.1-VC\include\SDL2_gfxPrimitives.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
