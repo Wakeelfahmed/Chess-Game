@@ -444,6 +444,7 @@ class Board {
 	bool Turn{ 0 };
 	bool ClassMate{ 0 };
 	COORD Last_Moved_Tile{ -1 };
+	COORD Lastest_Moved_Tile{ -1 };
 public:
 	void Check_for_Input(int Mouse_X, int Mouse_Y) {
 		static int Temp_i = 0, Temp_j = 0;
@@ -490,6 +491,7 @@ public:
 					Board_Grid[i][j].Has_A_Piece = 1;
 					Board_Grid[i][j].Button_Pushed = 0;
 					Last_Moved_Tile = { short(Board_Grid[Temp_i][Temp_j].Chess_Board.x), short(Board_Grid[Temp_i][Temp_j].Chess_Board.y) };
+					Lastest_Moved_Tile = { short(Board_Grid[i][j].Chess_Board.x), short(Board_Grid[i][j].Chess_Board.y) };
 				}
 				else if (Board_Grid[i][j].Check_if_Mouse_in_Button_Area(Mouse_X, Mouse_Y) && Board_Grid[i][j].Has_A_Piece)
 					if (Board_Grid[i][j].Button_Pushed || !Check_if_any_Piece_Selected()) {
@@ -508,6 +510,7 @@ public:
 	}
 	void Create_Board() {
 		SDL_Rect Box = { 0,0,80,80 }; COORD position = { 0 };
+		SDL_Texture* TempT = IMG_LoadTexture(renderer, "./assets/72ppi/Last Move.png");
 		bool toggle = 0;
 		for (int i = 0; i < 8; i++)
 		{
@@ -547,6 +550,12 @@ public:
 						SDL_SetRenderDrawColor(renderer, 216, 216, 216, 255);
 				}*/
 				SDL_RenderFillRect(renderer, &Box);
+				int texW, texH;
+				//SDL_Rect Temp = { Board_Grid[i][j].Chess_Board.x, (Board_Grid[i][j].Chess_Board.y), 80, 80 };
+				//SDL_RenderCopy(renderer, TempT, NULL, NULL);
+
+				// Render the texture to the destination rectangle
+
 				if (Board_Grid[i][j].has_a_Valid_Move) {
 					if (toggle) {
 						thickLineRGBA(renderer, Box.x, Box.y + 2, Box.x + 80, Box.y + 2, 5, 0, 0, 0, 255); //top
@@ -563,9 +572,31 @@ public:
 				}
 				if (Board_Grid[i][j].Chess_Board.x == Last_Moved_Tile.X && Board_Grid[i][j].Chess_Board.y == Last_Moved_Tile.Y)
 				{
-					thickLineRGBA(renderer, (Box.x + 40), Box.y + 30, (Box.x + 40), Box.y + 50, 5, 16, 74, 2, 255); //vertical
-					thickLineRGBA(renderer, (Box.x + 30), Box.y + 40, (Box.x + 50), Box.y + 40, 5, 16, 74, 2, 255); //hori
-
+					if (TempT)
+						SDL_DestroyTexture(TempT);
+					TempT = IMG_LoadTexture(renderer, "./assets/72ppi/Last Move.png");
+					SDL_QueryTexture(TempT, NULL, NULL, &texW, &texH);
+					SDL_Rect dstrect = { Board_Grid[i][j].Chess_Board.x + ((Board_Grid[i][j].Chess_Board.w - texW) / 2), Board_Grid[i][j].Chess_Board.y + ((Board_Grid[i][j].Chess_Board.h - texW) / 2), texW, texH };
+					SDL_RenderCopy(renderer, TempT, NULL, &dstrect);
+					//thickLineRGBA(renderer, (Box.x + 40), Box.y + 30, (Box.x + 40), Box.y + 50, 5, 16, 74, 2, 255); //vertical
+					//thickLineRGBA(renderer, (Box.x + 30), Box.y + 40, (Box.x + 50), Box.y + 40, 5, 16, 74, 2, 255); //hori
+				}
+				else if (Board_Grid[i][j].Chess_Board.x == Lastest_Moved_Tile.X && Board_Grid[i][j].Chess_Board.y == Lastest_Moved_Tile.Y)
+				{
+					if (TempT)
+						SDL_DestroyTexture(TempT);
+					TempT = IMG_LoadTexture(renderer, "./assets/72ppi/Lastest Move.png");
+					SDL_QueryTexture(TempT, NULL, NULL, &texW, &texH);
+					//thickLineRGBA(renderer, (Box.x + 40), Box.y + 30, (Box.x + 40), Box.y + 50, 5, 16, 74, 2, 255); //vertical
+					//thickLineRGBA(renderer, (Box.x + 30), Box.y + 40, (Box.x + 50), Box.y + 40, 5, 16, 74, 2, 255); //hori
+					SDL_Rect dstrect = { Board_Grid[i][j].Chess_Board.x + ((Board_Grid[i][j].Chess_Board.w - texW) / 2), Board_Grid[i][j].Chess_Board.y + ((Board_Grid[i][j].Chess_Board.h - texW) / 2), texW, texH };
+					SDL_RenderCopy(renderer, TempT, NULL, &dstrect);
+				}
+				if (Board_Grid[i][j].Chess_Piece)
+				{
+					SDL_Rect Temp = { Board_Grid[i][j].Chess_Piece->Piece_Position.X, Board_Grid[i][j].Chess_Piece->Piece_Position.Y - 5, 80, 80 };
+					if (Board_Grid[i][j].Chess_Piece->dead_or_alive)
+						SDL_RenderCopy(renderer, Board_Grid[i][j].Chess_Piece->Piece_Image, NULL, &Temp);
 				}
 				Box.x += 80;
 				if (j != 7)
@@ -574,6 +605,7 @@ public:
 			Box.x = 0;
 			Box.y += 80;
 		}
+		SDL_DestroyTexture(TempT);
 	}
 	void load_Pawn() {
 		for (int i = 8; i < 16; i++)
@@ -713,14 +745,17 @@ public:
 	}
 	void display_Chess_Pieces() {
 		SDL_Rect Temp = { 0 };
+		int Vertical_Correction = 4;
 		for (int i = 0; i < 16; i++)
 		{
-			Temp = { White_Pieces[i]->Piece_Position.X, White_Pieces[i]->Piece_Position.Y, 80, 80 };
-			if (White_Pieces[i]->dead_or_alive)
-				SDL_RenderCopy(renderer, White_Pieces[i]->Piece_Image, NULL, &Temp);
-			Temp = { Black_Pieces[i]->Piece_Position.X, Black_Pieces[i]->Piece_Position.Y, 80, 80 };
-			if (Black_Pieces[i]->dead_or_alive)
-				SDL_RenderCopy(renderer, Black_Pieces[i]->Piece_Image, NULL, &Temp);
+			//Temp = { White_Pieces[i]->Piece_Position.X, White_Pieces[i]->Piece_Position.Y - Vertical_Correction, 80, 80 };
+			//if (White_Pieces[i]->dead_or_alive)
+			//	SDL_RenderCopy(renderer, White_Pieces[i]->Piece_Image, NULL, &Temp);
+			//Temp = { Black_Pieces[i]->Piece_Position.X, Black_Pieces[i]->Piece_Position.Y - Vertical_Correction, 80, 80 };
+			//if (Black_Pieces[i]->dead_or_alive)
+			//	SDL_RenderCopy(renderer, Black_Pieces[i]->Piece_Image, NULL, &Temp);
+			//if (i == 7)
+			//	Vertical_Correction = 10;
 		}
 	}
 };
