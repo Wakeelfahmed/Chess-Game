@@ -35,6 +35,9 @@ public:
 		cout << "Valid_Moves\n";
 	}
 	virtual bool check_Valid_Move(Chess_Board_Grid Board_Grid[8][8], int i, int j, int x, int y) { return 0; }
+	bool Check_for_Check(int i, int j) {
+		//if
+	}
 };
 class Rook : public Piece
 {
@@ -280,6 +283,8 @@ public:
 };
 class King : public Piece
 {
+public:
+	//bool Under_Check{ 0 };
 	bool check_Valid_Move(Chess_Board_Grid Board_Grid[8][8], int i, int j, int x_to_check, int y_to_check) {
 		for (int dx = -1; dx <= 1; dx++) {
 			for (int dy = -1; dy <= 1; dy++) {
@@ -295,7 +300,6 @@ class King : public Piece
 				}
 			}
 		}
-
 		return 0;
 	}
 	void Valid_Moves(Chess_Board_Grid Board_Grid[8][8], int i, int j, bool Set_or_Clear_Moves) {
@@ -381,7 +385,6 @@ public:
 			}
 		}
 	}
-
 };
 class Pawn : public Piece {
 public:
@@ -442,7 +445,8 @@ class Board {
 	Piece* White_Pieces[16];
 	Piece* Black_Pieces[16];
 	bool Turn{ 0 };
-	bool ClassMate{ 0 };
+	char King_Color_Under_Check{' '};
+	bool Check_Mate{ 0 };
 	COORD Last_Moved_Tile{ -1 };
 	COORD Lastest_Moved_Tile{ -1 };
 public:
@@ -453,7 +457,9 @@ public:
 				if ((Board_Grid[i][j].has_a_Valid_Move || Board_Grid[i][j].Has_A_kill_Move) && Board_Grid[i][j].Check_if_Mouse_in_Button_Area(Mouse_X, Mouse_Y)) {
 					if (Board_Grid[i][j].Has_A_kill_Move)
 						Board_Grid[i][j].Chess_Piece->dead_or_alive = 0;
-					if ((i == 0 && Board_Grid[Temp_i][Temp_j].Chess_Piece->Piece_Color == 'B' || i == 7 && Board_Grid[Temp_i][Temp_j].Chess_Piece->Piece_Color == 'W') && (Board_Grid[Temp_i][Temp_j].Chess_Piece->Piece_Name == PieceName::Pawn))
+					if ((i == 0 && Board_Grid[Temp_i][Temp_j].Chess_Piece->Piece_Color == 'B'
+						|| i == 7 && Board_Grid[Temp_i][Temp_j].Chess_Piece->Piece_Color == 'W')
+						&& (Board_Grid[Temp_i][Temp_j].Chess_Piece->Piece_Name == PieceName::Pawn))
 					{
 						Piece* Temp = Board_Grid[Temp_i][Temp_j].Chess_Piece;
 						for (int k = 0; k < 16; k++)
@@ -492,9 +498,37 @@ public:
 					Board_Grid[i][j].Button_Pushed = 0;
 					Last_Moved_Tile = { short(Board_Grid[Temp_i][Temp_j].Chess_Board.x), short(Board_Grid[Temp_i][Temp_j].Chess_Board.y) };
 					Lastest_Moved_Tile = { short(Board_Grid[i][j].Chess_Board.x), short(Board_Grid[i][j].Chess_Board.y) };
+					Turn = !Turn;
+					bool to_Break = 0;
+					int x, y;
+					for (x = 0; x < 8; x++)
+					{
+						if (to_Break)
+							break;
+						for (y = 0; y < 8; y++)
+							if (Board_Grid[x][y].Chess_Piece)
+								if (Board_Grid[x][y].Chess_Piece->Piece_Name == PieceName::King && Board_Grid[x][y].Chess_Piece->Piece_Color != Board_Grid[i][j].Chess_Piece->Piece_Color)
+								{
+									to_Break = 1; x--;
+									break;
+								}
+					}
+					bool check = 0;
+					check = Board_Grid[i][j].Chess_Piece->check_Valid_Move(Board_Grid, i, j, x, y);
+					if (check) {
+						Check_Mate = 1;
+						King_Color_Under_Check = Board_Grid[x][y].Chess_Piece->Piece_Color;
+						//Board_Grid[x][y].Chess_Piece.Under_Check = 1;
+					}
+					else
+						Check_Mate = 0;
 				}
 				else if (Board_Grid[i][j].Check_if_Mouse_in_Button_Area(Mouse_X, Mouse_Y) && Board_Grid[i][j].Has_A_Piece)
 					if (Board_Grid[i][j].Button_Pushed || !Check_if_any_Piece_Selected()) {
+						if ((!Turn && Board_Grid[i][j].Chess_Piece->Piece_Color == 'B'))
+							return;
+						else if ((Turn && Board_Grid[i][j].Chess_Piece->Piece_Color == 'W'))
+							return;
 						Board_Grid[i][j].Button_Pushed = !(Board_Grid[i][j].Button_Pushed);
 						//if (Board_Grid[i][j].Button_Pushed)
 						Board_Grid[i][j].Chess_Piece->Valid_Moves(Board_Grid, i, j, Board_Grid[i][j].Button_Pushed);
@@ -517,8 +551,10 @@ public:
 			for (int j = 0; j < 8; j++)
 			{
 				Board_Grid[i][j].Chess_Board = { Box.x, Box.y, 80, 80 };
+				if (Board_Grid[i][j].Chess_Piece && (Board_Grid[i][j].Chess_Piece->Piece_Name == PieceName::King) && (Board_Grid[i][j].Chess_Piece->Piece_Color == King_Color_Under_Check))
+					SDL_SetRenderDrawColor(renderer, 146, 9, 9, 255);
 
-				if (Board_Grid[i][j].has_a_Valid_Move) {
+				else if (Board_Grid[i][j].has_a_Valid_Move) {
 					SDL_SetRenderDrawColor(renderer, 239, 239, 32, 255);
 				}
 				else if (Board_Grid[i][j].Has_A_kill_Move && Board_Grid[i][j].Chess_Piece->Piece_Name == PieceName::King)
@@ -551,10 +587,6 @@ public:
 				}*/
 				SDL_RenderFillRect(renderer, &Box);
 				int texW, texH;
-				//SDL_Rect Temp = { Board_Grid[i][j].Chess_Board.x, (Board_Grid[i][j].Chess_Board.y), 80, 80 };
-				//SDL_RenderCopy(renderer, TempT, NULL, NULL);
-
-				// Render the texture to the destination rectangle
 
 				if (Board_Grid[i][j].has_a_Valid_Move) {
 					if (toggle) {
@@ -578,8 +610,6 @@ public:
 					SDL_QueryTexture(TempT, NULL, NULL, &texW, &texH);
 					SDL_Rect dstrect = { Board_Grid[i][j].Chess_Board.x + ((Board_Grid[i][j].Chess_Board.w - texW) / 2), Board_Grid[i][j].Chess_Board.y + ((Board_Grid[i][j].Chess_Board.h - texW) / 2), texW, texH };
 					SDL_RenderCopy(renderer, TempT, NULL, &dstrect);
-					//thickLineRGBA(renderer, (Box.x + 40), Box.y + 30, (Box.x + 40), Box.y + 50, 5, 16, 74, 2, 255); //vertical
-					//thickLineRGBA(renderer, (Box.x + 30), Box.y + 40, (Box.x + 50), Box.y + 40, 5, 16, 74, 2, 255); //hori
 				}
 				else if (Board_Grid[i][j].Chess_Board.x == Lastest_Moved_Tile.X && Board_Grid[i][j].Chess_Board.y == Lastest_Moved_Tile.Y)
 				{
@@ -587,8 +617,6 @@ public:
 						SDL_DestroyTexture(TempT);
 					TempT = IMG_LoadTexture(renderer, "./assets/72ppi/Lastest Move.png");
 					SDL_QueryTexture(TempT, NULL, NULL, &texW, &texH);
-					//thickLineRGBA(renderer, (Box.x + 40), Box.y + 30, (Box.x + 40), Box.y + 50, 5, 16, 74, 2, 255); //vertical
-					//thickLineRGBA(renderer, (Box.x + 30), Box.y + 40, (Box.x + 50), Box.y + 40, 5, 16, 74, 2, 255); //hori
 					SDL_Rect dstrect = { Board_Grid[i][j].Chess_Board.x + ((Board_Grid[i][j].Chess_Board.w - texW) / 2), Board_Grid[i][j].Chess_Board.y + ((Board_Grid[i][j].Chess_Board.h - texW) / 2), texW, texH };
 					SDL_RenderCopy(renderer, TempT, NULL, &dstrect);
 				}
@@ -610,23 +638,21 @@ public:
 	void load_Pawn() {
 		for (int i = 8; i < 16; i++)
 		{
-			White_Pieces[i] = new Pawn;
-			Black_Pieces[i] = new Pawn;
-			White_Pieces[i]->Piece_Color = 'W';
-			Black_Pieces[i]->Piece_Color = 'B';
-			Black_Pieces[i]->Piece_Name = White_Pieces[i]->Piece_Name = PieceName::Pawn;
-
-			White_Pieces[i]->Piece_Position.X = Board_Grid[1][i - 8].Chess_Board.x;
-			White_Pieces[i]->Piece_Position.Y = Board_Grid[1][i - 8].Chess_Board.y;
-			White_Pieces[i]->Piece_Image = IMG_LoadTexture(renderer, "./assets/PawnW.png");
+			Board_Grid[1][i - 8].Chess_Piece = new Pawn;
+			Board_Grid[1][i - 8].Chess_Piece->Piece_Color = 'W';
+			Board_Grid[1][i - 8].Chess_Piece->Piece_Position.X = Board_Grid[1][i - 8].Chess_Board.x;
+			Board_Grid[1][i - 8].Chess_Piece->Piece_Position.Y = Board_Grid[1][i - 8].Chess_Board.y;
+			Board_Grid[1][i - 8].Chess_Piece->Piece_Name = PieceName::Pawn;
+			Board_Grid[1][i - 8].Chess_Piece->Piece_Image = IMG_LoadTexture(renderer, "./assets/PawnW.png");
 			Board_Grid[1][i - 8].Has_A_Piece = 1;
-			Board_Grid[1][i - 8].Chess_Piece = White_Pieces[i];
 
-			Black_Pieces[i]->Piece_Image = IMG_LoadTexture(renderer, "./assets/PawnB.png");
-			Black_Pieces[i]->Piece_Position.X = Board_Grid[6][i - 8].Chess_Board.x;
-			Black_Pieces[i]->Piece_Position.Y = Board_Grid[6][i - 8].Chess_Board.y;
+			Board_Grid[6][i - 8].Chess_Piece = new Pawn;
+			Board_Grid[6][i - 8].Chess_Piece->Piece_Color = 'B';
+			Board_Grid[6][i - 8].Chess_Piece->Piece_Position.X = Board_Grid[6][i - 8].Chess_Board.x;
+			Board_Grid[6][i - 8].Chess_Piece->Piece_Position.Y = Board_Grid[6][i - 8].Chess_Board.y;
+			Board_Grid[6][i - 8].Chess_Piece->Piece_Name = PieceName::Pawn;
+			Board_Grid[6][i - 8].Chess_Piece->Piece_Image = IMG_LoadTexture(renderer, "./assets/PawnB.png");
 			Board_Grid[6][i - 8].Has_A_Piece = 1;
-			Board_Grid[6][i - 8].Chess_Piece = Black_Pieces[i];
 		}
 	}
 	bool Check_if_any_Piece_Selected() {
@@ -669,7 +695,6 @@ public:
 				White_Pieces[i]->Piece_Image = IMG_LoadTexture(renderer, "./assets/KnightW.png");
 				Board_Grid[0][i].Has_A_Piece = 1;
 				Board_Grid[0][i].Chess_Piece = White_Pieces[i];
-
 
 				Black_Pieces[i]->Piece_Image = IMG_LoadTexture(renderer, "./assets/KnightB.png");
 				Black_Pieces[i]->Piece_Position.X = Board_Grid[7][i].Chess_Board.x;
@@ -733,8 +758,13 @@ public:
 	void Check_for_Hovering(int Mouse_X, int Mouse_Y) {
 		for (int i = 0; i < 8; i++)
 			for (int j = 0; j < 8; j++)
-				if (Board_Grid[i][j].Has_A_Piece)
+				if (Board_Grid[i][j].Has_A_Piece) {
+					if ((!Turn && Board_Grid[i][j].Chess_Piece->Piece_Color == 'B') && Board_Grid[i][j].Check_if_Mouse_in_Button_Area(Mouse_X, Mouse_Y))
+						return;
+					else if ((Turn && Board_Grid[i][j].Chess_Piece->Piece_Color == 'W') && Board_Grid[i][j].Check_if_Mouse_in_Button_Area(Mouse_X, Mouse_Y))
+						return;
 					Board_Grid[i][j].Button_Hovered = Board_Grid[i][j].Check_if_Mouse_in_Button_Area(Mouse_X, Mouse_Y);
+				}
 	}
 	void Clear_All_Moves() {
 		for (int i = 0; i < 8; i++)
@@ -784,7 +814,6 @@ int main(int argc, char* argv[]) {
 			{
 				SDL_GetMouseState(&MouseX, &MouseY);
 				Chess.Check_for_Hovering(MouseX, MouseY);
-				//Chess;
 			}
 			if (event.type == SDL_MOUSEBUTTONUP)	//mouse click on Button
 			{
