@@ -183,7 +183,7 @@ public:
 			//	//return 1;
 			//	break;
 			//}
-			else if (Board_Grid[x][y].Has_A_Piece || Board_Grid[x][y].Chess_Piece) {
+			else if (Board_Grid[x][y].Has_A_Piece) {
 				break;
 			}
 		}
