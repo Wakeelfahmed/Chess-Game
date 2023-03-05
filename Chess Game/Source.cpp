@@ -34,12 +34,13 @@ public:
 	virtual void Valid_Moves(Chess_Board_Grid Board_Grid[8][8], int i, int j, bool Set_or_Clear_Moves) {}
 	virtual bool check_Valid_Move(Chess_Board_Grid Board_Grid[8][8], int i, int j, int x, int y) { return 0; }
 	virtual void Valid_Moves(Chess_Board_Grid Board_Grid[8][8], int i, int j, bool Set_or_Clear_Moves, bool King_in_check) {}
-	bool Check_for_Check(Chess_Board_Grid Board_Grid[8][8], int i, int j, char Piece_Color) {
+	bool Check_for_Check(Chess_Board_Grid Board_Grid[8][8], char Piece_Color) {
 		COORD King_Pos;
 		for (int x = 0; x < 8; x++)
 			for (int y = 0; y < 8; y++) {
 				if (Board_Grid[x][y].Chess_Piece)
-					if (Board_Grid[x][y].Chess_Piece && (Board_Grid[x][y].Chess_Piece->Piece_Name == PieceName::King) && Board_Grid[x][y].Chess_Piece->Piece_Color == Piece_Color)
+					if (Board_Grid[x][y].Chess_Piece && (Board_Grid[x][y].Chess_Piece->Piece_Name == PieceName::King)
+						&& Board_Grid[x][y].Chess_Piece->Piece_Color == Piece_Color)
 						King_Pos = { short(x), short(y) };
 			}
 		bool Possible_Attack = 0;
@@ -54,9 +55,8 @@ public:
 						cout << "";
 					Possible_Attack = Board_Grid[x][y].Chess_Piece->check_Valid_Move(Board_Grid, x, y, King_Pos.X, King_Pos.Y);
 					if (Possible_Attack)
-						goto Skip;
+						return Possible_Attack;
 				}
-	Skip:
 		return Possible_Attack;
 	}
 };
@@ -66,11 +66,8 @@ public:
 	bool check_Valid_Move(Chess_Board_Grid Board_Grid[8][8], int i, int j, int X_to_check, int Y_to_check) {
 		for (int k = j + 1; k < 8; k++)//right
 		{
-			//if (Board_Grid[i][k].Has_A_Piece == NULL)
-			//{
 			if (i == X_to_check && k == Y_to_check)
 				return 1;
-			//}
 			else if (Board_Grid[i][k].Chess_Piece) {
 				break;
 			}
@@ -167,7 +164,88 @@ public:
 				break;
 			}
 		}
+	}
+	void Valid_Moves(Chess_Board_Grid Board_Grid[8][8], int i, int j, bool Set_or_Clear_Moves, bool King_in_check) {
+		bool Possble_Attack_to_king;
+		Rook* Temp = this;
+		for (int k = j + 1; k < 8; k++)//right
+		{
+			if (Board_Grid[i][k].Has_A_Piece == NULL) {
+				Board_Grid[i][k].Has_A_Piece = 1;
+				Board_Grid[i][k].Chess_Piece = Temp;
 
+				Board_Grid[i][j].Has_A_Piece = 0;
+				Board_Grid[i][j].Chess_Piece = NULL;
+				Possble_Attack_to_king = Check_for_Check(Board_Grid, Piece_Color);
+				if (Possble_Attack_to_king) {
+					Board_Grid[i][k].Has_A_Piece = 0;
+					Board_Grid[i][k].Chess_Piece = NULL;
+					Board_Grid[i][j].Chess_Piece = Temp;
+					Board_Grid[i][j].Has_A_Piece = 1;
+				}
+				else {
+					Board_Grid[i][k].has_a_Valid_Move = 1;
+					Board_Grid[i][k].Has_A_Piece = 0;
+					Board_Grid[i][k].Chess_Piece = NULL;
+					Board_Grid[i][j].Chess_Piece = Temp;
+					Board_Grid[i][j].Has_A_Piece = 1;
+				}
+			}
+			else {
+				if (Board_Grid[i][k].Chess_Piece->Piece_Color != this->Piece_Color) {
+					Piece* Temp = Board_Grid[i][k].Chess_Piece;
+					Board_Grid[i][k].Has_A_Piece = 0;
+					//Board_Grid[i][k].Chess_Piece = NULL;
+					Board_Grid[i][k].Chess_Piece = this;
+					Possble_Attack_to_king = Check_for_Check(Board_Grid, Piece_Color);
+					if (Possble_Attack_to_king) {
+						Board_Grid[i][k].Chess_Piece = Temp;
+						Board_Grid[i][k].Has_A_Piece = 1;
+					}
+					else {
+						Board_Grid[i][k].Has_A_kill_Move = 1;
+						Board_Grid[i][k].Has_A_Piece = 1;
+						Board_Grid[i][k].Chess_Piece = Temp;
+					}
+				}
+				break;
+			}
+		}
+		for (int k = j - 1; k >= 0; k--)//left
+		{
+			if (Board_Grid[i][k].Has_A_Piece == NULL) {
+				Board_Grid[i][k].has_a_Valid_Move = 1;
+			}
+			else {
+				if (Board_Grid[i][k].Chess_Piece->Piece_Color != this->Piece_Color)
+					Board_Grid[i][k].Has_A_kill_Move = 1;
+				break;
+			}
+		}
+		for (int k = i - 1; k >= 0; k--) //upWards
+		{
+			if (Board_Grid[k][j].Has_A_Piece == NULL) {
+				Board_Grid[k][j].has_a_Valid_Move = 1;
+			}
+			else {
+				if (Board_Grid[k][j].Chess_Piece->Piece_Color != this->Piece_Color)
+					Board_Grid[k][j].Has_A_kill_Move = 1;
+				break;
+			}
+		}
+		/*i is for vertical
+		j is for horizontal*/
+		for (int k = i + 1; k < 8; k++)  //Down Wards
+		{
+			if (Board_Grid[k][j].Has_A_Piece == NULL) {
+				Board_Grid[k][j].has_a_Valid_Move = 1;
+			}
+			else {
+				if (Board_Grid[k][j].Chess_Piece->Piece_Color != this->Piece_Color)
+					Board_Grid[k][j].Has_A_kill_Move = 1;
+				break;
+			}
+		}
 	}
 };
 class Bishop : public Piece
@@ -371,6 +449,53 @@ public:
 			}
 		}
 	}
+	void Valid_Moves(Chess_Board_Grid Board_Grid[8][8], int i, int j, bool Set_or_Clear_Moves, bool King_in_check) {
+		for (int dx = -1; dx <= 1; dx++) {
+			for (int dy = -1; dy <= 1; dy++) {
+				if (dx == 0 && dy == 0)
+					continue; // don't move to the same spot
+
+				int new_x = i + dx;
+				int new_y = j + dy;
+				if (new_x >= 0 && new_x < 8 && new_y >= 0 && new_y < 8)
+				{
+					if (!Board_Grid[new_x][new_y].Chess_Piece || Board_Grid[new_x][new_y].Chess_Piece->Piece_Color != Piece_Color) {
+						bool Possible_Attack = 0;
+						// empty space or enemy piece
+						for (int x = 0; x < 8; x++)
+						{
+							if (Possible_Attack)
+								break;
+							for (int y = 0; y < 8; y++) {
+								if (Board_Grid[x][y].Has_A_Piece) {
+									if (Board_Grid[x][y].Chess_Piece->Piece_Color != Piece_Color) {
+										if (new_x == 6 && new_y == 4 && x == 6) {
+											cout << "";
+										}
+										Possible_Attack = Board_Grid[x][y].Chess_Piece->check_Valid_Move(Board_Grid, x, y, new_x, new_y);
+										if (Possible_Attack) {
+											cout << "";
+											Possible_Attack = 0;
+										}
+										Possible_Attack = Board_Grid[x][y].Chess_Piece->check_Valid_Move(Board_Grid, x, y, new_x, new_y);
+										if (Possible_Attack)
+											break;
+									}
+								}
+							}
+						}
+						if (!Possible_Attack && !Board_Grid[new_x][new_y].Has_A_Piece)
+							Board_Grid[new_x][new_y].has_a_Valid_Move = true;
+						else if (Board_Grid[new_x][new_y].Chess_Piece && !Possible_Attack) {
+							Board_Grid[new_x][new_y].Has_A_kill_Move = true;
+						}
+						Possible_Attack = 0;
+					}
+				}
+			}
+		}
+	}
+
 };
 class Knight : public Piece
 {
@@ -393,6 +518,20 @@ public:
 		if (Set_or_Clear_Moves == false)
 			return;
 
+		int moves[8][2] = { {-2, -1}, {-2, 1}, {2, -1}, {2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2} };
+		for (int k = 0; k < 8; k++) {
+			int x = i + moves[k][0];
+			int y = j + moves[k][1];
+			if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+				if (Board_Grid[x][y].Chess_Piece == nullptr) {
+					Board_Grid[x][y].has_a_Valid_Move = 1;
+				}
+				else if (Board_Grid[x][y].Chess_Piece->Piece_Color != Piece_Color)
+					Board_Grid[x][y].Has_A_kill_Move = 1;
+			}
+		}
+	}
+	virtual void Valid_Moves(Chess_Board_Grid Board_Grid[8][8], int i, int j, bool Set_or_Clear_Moves, bool King_in_check) {
 		int moves[8][2] = { {-2, -1}, {-2, 1}, {2, -1}, {2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2} };
 		for (int k = 0; k < 8; k++) {
 			int x = i + moves[k][0];
@@ -473,20 +612,23 @@ public:
 			bool Check_If_Still_in_Check = 1;
 			if (Board_Grid[i - 1][j].Has_A_Piece == NULL) {
 				Board_Grid[i - 1][j].Chess_Piece = new Piece(Temp);
-				Check_If_Still_in_Check = Check_for_Check(Board_Grid, (i - 1), j, Piece_Color);
+				Board_Grid[i - 1][j].Has_A_Piece = 1;
+				Check_If_Still_in_Check = Check_for_Check(Board_Grid, Piece_Color);
 				if (Check_If_Still_in_Check) {
 					Board_Grid[i - 1][j].Chess_Piece = nullptr;
+					Board_Grid[i - 1][j].Has_A_Piece = 0;
 					Board_Grid[i - 1][j].Chess_Piece = NULL;
 				}
 				else {
 					Board_Grid[i - 1][j].Chess_Piece = nullptr;
+					Board_Grid[i - 1][j].Has_A_Piece = 0;
 					Board_Grid[i - 1][j].has_a_Valid_Move = 1;
 				}
 
 				if (Board_Grid[i - 2][j].Has_A_Piece == NULL && i == 6) {
 					Board_Grid[i - 2][j].Chess_Piece = new Piece(Temp);
 					Board_Grid[i - 2][j].Has_A_Piece = 1;
-					Check_If_Still_in_Check = Check_for_Check(Board_Grid, (i - 1), j, Piece_Color);
+					Check_If_Still_in_Check = Check_for_Check(Board_Grid, Piece_Color);
 					if (Check_If_Still_in_Check) {
 						Board_Grid[i - 2][j].Chess_Piece = nullptr;
 						Board_Grid[i - 2][j].Has_A_Piece = 0;
@@ -629,18 +771,18 @@ public:
 						for (int y = 0; y < 8; y++)
 						{
 							if (Board_Grid[x][y].Chess_Piece && Board_Grid[x][y].Chess_Piece->Piece_Color != 'B') {
-								Possible_Attack = Board_Grid[x][y].Chess_Piece->check_Valid_Move(Board_Grid, x, y, W_King_Pos.X, W_King_Pos.Y);
+								Possible_Attack = Board_Grid[x][y].Chess_Piece->check_Valid_Move(Board_Grid, x, y, B_King_Pos.X, B_King_Pos.Y);
 								if (Possible_Attack) {
-									check = 1;  King_Color_Under_Check = 'W';
+									check = 1;  King_Color_Under_Check = 'B';
 									goto Done;
 								}
 								else
 									check = 0;
 							}
 							else if (Board_Grid[x][y].Chess_Piece && Board_Grid[x][y].Chess_Piece->Piece_Color != 'W') {
-								Possible_Attack = Board_Grid[x][y].Chess_Piece->check_Valid_Move(Board_Grid, x, y, B_King_Pos.X, B_King_Pos.Y);
+								Possible_Attack = Board_Grid[x][y].Chess_Piece->check_Valid_Move(Board_Grid, x, y, W_King_Pos.X, W_King_Pos.Y);
 								if (Possible_Attack) {
-									check = 1;  King_Color_Under_Check = 'B';
+									check = 1;  King_Color_Under_Check = 'W';
 									goto Done;
 								}
 								else
