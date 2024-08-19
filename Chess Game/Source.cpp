@@ -1,6 +1,7 @@
 #include<iostream>
 #include<Windows.h>
 #include"C:\SDL2-devel-2.26.1-VC\include\SDL.h"
+#include"C:\SDL2-devel-2.26.1-VC\include\SDL.h"
 #include"C:\SDL2-devel-2.26.1-VC\include\SDL_image.h"
 #include"c:\SDL2-devel-2.26.1-VC\include\SDL2_gfxPrimitives.h"
 using namespace std;
@@ -195,8 +196,8 @@ public:
 				if (Board_Grid[i][k].Chess_Piece->Piece_Color != this->Piece_Color) {
 					Piece* Temp = Board_Grid[i][k].Chess_Piece;
 					Board_Grid[i][k].Has_A_Piece = 0;
-					//Board_Grid[i][k].Chess_Piece = NULL;
 					Board_Grid[i][k].Chess_Piece = this;
+					Board_Grid[i][j].Chess_Piece = nullptr;
 					Possble_Attack_to_king = Check_for_Check(Board_Grid, Piece_Color);
 					if (Possble_Attack_to_king) {
 						Board_Grid[i][k].Chess_Piece = Temp;
@@ -207,6 +208,7 @@ public:
 						Board_Grid[i][k].Has_A_Piece = 1;
 						Board_Grid[i][k].Chess_Piece = Temp;
 					}
+					Board_Grid[i][j].Chess_Piece = this;
 				}
 				break;
 			}
@@ -214,11 +216,31 @@ public:
 		for (int k = j - 1; k >= 0; k--)//left
 		{
 			if (Board_Grid[i][k].Has_A_Piece == NULL) {
-				Board_Grid[i][k].has_a_Valid_Move = 1;
+				Board_Grid[i][k].Has_A_Piece = 1;
+				Board_Grid[i][k].Chess_Piece = Temp;
+
+				Board_Grid[i][j].Has_A_Piece = 0;
+				Board_Grid[i][j].Chess_Piece = nullptr;
+				if (Check_for_Check(Board_Grid, Piece_Color)) {
+					Board_Grid[i][k].Has_A_Piece = 0;
+					Board_Grid[i][k].Chess_Piece = nullptr;
+					Board_Grid[i][k].has_a_Valid_Move = 0;
+				}
+				else
+					Board_Grid[i][k].has_a_Valid_Move = 1;
+				Board_Grid[i][k].Chess_Piece = nullptr;
 			}
 			else {
-				if (Board_Grid[i][k].Chess_Piece->Piece_Color != this->Piece_Color)
-					Board_Grid[i][k].Has_A_kill_Move = 1;
+				if (Board_Grid[i][k].Chess_Piece->Piece_Color != this->Piece_Color) {
+					Piece* Temp = Board_Grid[i][k].Chess_Piece;
+					Board_Grid[i][k].Chess_Piece = this;
+					Board_Grid[i][j].Chess_Piece = nullptr;		Board_Grid[i][j].Has_A_Piece = 0;
+					if (Check_for_Check(Board_Grid, Piece_Color)) {
+						Board_Grid[i][k].Has_A_kill_Move = 0;
+					}
+					else
+						Board_Grid[i][k].Has_A_kill_Move = 1;
+				}
 				break;
 			}
 		}
@@ -531,17 +553,43 @@ public:
 			}
 		}
 	}
-	virtual void Valid_Moves(Chess_Board_Grid Board_Grid[8][8], int i, int j, bool Set_or_Clear_Moves, bool King_in_check) {
+	void Valid_Moves(Chess_Board_Grid Board_Grid[8][8], int i, int j, bool Set_or_Clear_Moves, bool King_in_check) {
 		int moves[8][2] = { {-2, -1}, {-2, 1}, {2, -1}, {2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2} };
+		bool Check_If_Still_in_Check = 1;
+		Piece Temp = *this;
+		Piece* Temp2;
 		for (int k = 0; k < 8; k++) {
 			int x = i + moves[k][0];
 			int y = j + moves[k][1];
 			if (x >= 0 && x < 8 && y >= 0 && y < 8) {
-				if (Board_Grid[x][y].Chess_Piece == nullptr) {
-					Board_Grid[x][y].has_a_Valid_Move = 1;
+				if (Board_Grid[x][y].Chess_Piece == NULL || Board_Grid[x][y].Chess_Piece == nullptr) {
+					Board_Grid[x][y].Chess_Piece = new Piece(Temp);
+					Board_Grid[x][y].Has_A_Piece = 1;
+					if (Check_for_Check(Board_Grid, Piece_Color)) {
+						Board_Grid[x][y].Chess_Piece = nullptr;
+						Board_Grid[x][y].Has_A_Piece = 0;
+					}
+					else {
+						Board_Grid[x][y].Chess_Piece = nullptr;
+						Board_Grid[x][y].Has_A_Piece = 0;
+						Board_Grid[x][y].has_a_Valid_Move = 1;
+					}
 				}
-				else if (Board_Grid[x][y].Chess_Piece->Piece_Color != Piece_Color)
-					Board_Grid[x][y].Has_A_kill_Move = 1;
+				else if (Board_Grid[x][y].Has_A_Piece) {
+					if (Board_Grid[x][y].Chess_Piece->Piece_Color != Temp.Piece_Color) {
+						Temp2 = Board_Grid[x][y].Chess_Piece;
+						Board_Grid[x][y].Chess_Piece = this;
+						if (Check_for_Check(Board_Grid, Piece_Color)) {
+							Board_Grid[x][y].Chess_Piece = Temp2;
+							Board_Grid[x][y].Has_A_Piece = 1;
+						}
+						else {
+							Board_Grid[x][y].Chess_Piece = Temp2;
+							Board_Grid[x][y].Has_A_Piece = 1;
+							Board_Grid[x][y].Has_A_kill_Move = 1;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -608,13 +656,11 @@ public:
 			return;
 		}
 		if (this->Piece_Color == 'B') {
-			Piece Temp = *this;
-			bool Check_If_Still_in_Check = 1;
+			Piece* Temp2, * Temp;
 			if (Board_Grid[i - 1][j].Has_A_Piece == NULL) {
-				Board_Grid[i - 1][j].Chess_Piece = new Piece(Temp);
+				Board_Grid[i - 1][j].Chess_Piece = new Piece(*this);
 				Board_Grid[i - 1][j].Has_A_Piece = 1;
-				Check_If_Still_in_Check = Check_for_Check(Board_Grid, Piece_Color);
-				if (Check_If_Still_in_Check) {
+				if (Check_for_Check(Board_Grid, Piece_Color)) {
 					Board_Grid[i - 1][j].Chess_Piece = nullptr;
 					Board_Grid[i - 1][j].Has_A_Piece = 0;
 					Board_Grid[i - 1][j].Chess_Piece = NULL;
@@ -624,12 +670,10 @@ public:
 					Board_Grid[i - 1][j].Has_A_Piece = 0;
 					Board_Grid[i - 1][j].has_a_Valid_Move = 1;
 				}
-
 				if (Board_Grid[i - 2][j].Has_A_Piece == NULL && i == 6) {
-					Board_Grid[i - 2][j].Chess_Piece = new Piece(Temp);
+					Board_Grid[i - 2][j].Chess_Piece = new Piece(*this);
 					Board_Grid[i - 2][j].Has_A_Piece = 1;
-					Check_If_Still_in_Check = Check_for_Check(Board_Grid, Piece_Color);
-					if (Check_If_Still_in_Check) {
+					if (Check_for_Check(Board_Grid, Piece_Color)) {
 						Board_Grid[i - 2][j].Chess_Piece = nullptr;
 						Board_Grid[i - 2][j].Has_A_Piece = 0;
 					}
@@ -639,14 +683,32 @@ public:
 						Board_Grid[i - 2][j].has_a_Valid_Move = 1;
 					}
 				}
-
 			}
 			if (j != 0 && Board_Grid[i - 1][j - 1].Has_A_Piece)
-				if (Board_Grid[i - 1][j - 1].Chess_Piece->Piece_Color == 'W')
-					Board_Grid[i - 1][j - 1].Has_A_kill_Move = 1;
+				if (Board_Grid[i - 1][j - 1].Chess_Piece->Piece_Color == 'W') {
+					Temp2 = Board_Grid[i - 1][j - 1].Chess_Piece;
+					Board_Grid[i - 1][j - 1].Chess_Piece = this;
+					Board_Grid[i][j].Chess_Piece = nullptr;	Board_Grid[i][j].Has_A_Piece = 0;
+					if (Check_for_Check(Board_Grid, Piece_Color))
+						Board_Grid[i - 1][j - 1].Has_A_kill_Move = 0;
+					else
+						Board_Grid[i - 1][j - 1].Has_A_kill_Move = 1;
+					Board_Grid[i - 1][j - 1].Chess_Piece = Temp2;
+					Board_Grid[i][j].Chess_Piece = this;	Board_Grid[i][j].Has_A_Piece = 1;
+				}
 			if (j != 7 && Board_Grid[i - 1][j + 1].Has_A_Piece)
-				if (Board_Grid[i - 1][j + 1].Chess_Piece->Piece_Color == 'W')
+				if (Board_Grid[i - 1][j + 1].Chess_Piece->Piece_Color == 'W') {
 					Board_Grid[i - 1][j + 1].Has_A_kill_Move = 1;
+					Temp2 = Board_Grid[i - 1][j + 1].Chess_Piece;
+					Board_Grid[i - 1][j + 1].Chess_Piece = this;
+					Board_Grid[i][j].Chess_Piece = nullptr;	Board_Grid[i][j].Has_A_Piece = 0;
+					if (Check_for_Check(Board_Grid, Piece_Color))
+						Board_Grid[i - 1][j + 1].Has_A_kill_Move = 0;
+					else
+						Board_Grid[i - 1][j + 1].Has_A_kill_Move = 1;
+					Board_Grid[i - 1][j + 1].Chess_Piece = Temp2;
+					Board_Grid[i][j].Chess_Piece = this;	Board_Grid[i][j].Has_A_Piece = 1;
+				}
 		}
 		else {
 			if (Board_Grid[i + 1][j].Has_A_Piece == NULL) {
@@ -663,6 +725,92 @@ public:
 		}
 	}
 };
+//class AI {
+//public:
+//	Move get_best_move(Board& board) {
+//		int best_score = -INFINITY;
+//		Move best_move;
+//
+//		for (auto& move : board.get_possible_moves()) {
+//			board.make_move(move);
+//			int score = minimax(board, 3, false);
+//			board.undo_move(move);
+//
+//			if (score > best_score) {
+//				best_score = score;
+//				best_move = move;
+//			}
+//		}
+//
+//		return best_move;
+//	}
+//
+//	int evaluate_board(Board& board) {
+//		int score = 0;
+//
+//		// Count the number of pieces each player has
+//		for (auto& piece : board.get_pieces()) {
+//			if (piece->get_color() == Color::WHITE) {
+//				score += piece->get_value();
+//			}
+//			else {
+//				score -= piece->get_value();
+//			}
+//		}
+//
+//		// Take into account the position of the pieces
+//		// ...
+//
+//		return score;
+//	}
+//
+//	int minimax(Board& board, int depth, bool is_maximizing) {
+//		if (depth == 0 || board.is_game_over()) {
+//			return evaluate_board(board);
+//		}
+//
+//		if (is_maximizing) {
+//			int best_score = -INFINITY;
+//
+//			for (auto& move : board.get_possible_moves()) {
+//				board.make_move(move);
+//				int score = minimax(board, depth - 1, false);
+//				board.undo_move(move);
+//
+//				best_score = max(best_score, score);
+//			}
+//
+//			return best_score;
+//		}
+//		else {
+//			int best_score = INFINITY;
+//
+//			for (auto& move : board.get_possible_moves()) {
+//				board.make_move(move);
+//				int score = minimax(board, depth - 1, true);
+//				board.undo_move(move);
+//
+//				best_score = min(best_score, score);
+//			}
+//
+//			return best_score;
+//		}
+//	}
+//
+//private:
+//};
+int getPieceValue(PieceName name) {
+	switch (name) {
+	case PieceName::Pawn: return 10;
+	case PieceName::Knight: return 30;
+	case PieceName::Bishop: return 30;
+	case PieceName::Rook: return 50;
+	case PieceName::Queen: return 90;
+	case PieceName::King: return 900;
+	default: return 0;
+	}
+}
+
 class Board {
 	Chess_Board_Grid Board_Grid[8][8];
 	Piece* White_Pieces[16];
@@ -673,6 +821,99 @@ class Board {
 	COORD Last_Moved_Tile{ -1 };
 	COORD Lastest_Moved_Tile{ -1 };
 public:
+	void makeMove(int i, int j, int x, int y) {
+		Board_Grid[i][j].Chess_Piece = Board_Grid[Temp_i][Temp_j].Chess_Piece;
+
+	}
+	int minimax(Board& board, int depth, bool isMaximizingPlayer) {
+		if (depth == 0 /*|| board.isGameOver()*/) {
+			return board.evaluate();  // Evaluate the current board state
+		}
+
+		if (isMaximizingPlayer) {
+			int maxEval = INT_MIN;
+			for (int i = 0; i < 8; ++i) {
+				for (int j = 0; j < 8; ++j) {
+					if (board.Board_Grid[i][j].Chess_Piece && board.Board_Grid[i][j].Chess_Piece->Piece_Color == 'W') {  // AI's color
+						board.Board_Grid[i][j].Chess_Piece->Valid_Moves(board.Board_Grid, i, j, true);
+						for (int x = 0; x < 8; ++x) {
+							for (int y = 0; y < 8; ++y) {
+								if (board.Board_Grid[x][y].has_a_Valid_Move || board.Board_Grid[x][y].Has_A_kill_Move) {
+									//MakeMove:
+									// Simulate the move
+									//board.makeMove({ i, j, x, y });
+									Piece* Temp = Board_Grid[i][j].Chess_Piece;
+									Board_Grid[i][j].Chess_Piece = NULL;
+									Board_Grid[i][j].Has_A_Piece = 0;
+
+									Piece* Temp2 = Board_Grid[i][j].Chess_Piece;
+									if (board.Board_Grid[x][y].Has_A_kill_Move)
+									{
+										board.Board_Grid[x][y].Chess_Piece->dead_or_alive = 0;
+										Temp2 = Board_Grid[x][y].Chess_Piece;
+									}
+									Board_Grid[i][j].Chess_Piece = Board_Grid[i][j].Chess_Piece;
+									Board_Grid[x][y].Chess_Piece = Temp2;
+									Board_Grid[x][y].Has_A_Piece = 1;
+									//if (board.Board_Grid[x][y].Has_A_kill_Move)
+
+									int eval = minimax(board, depth - 1, false);
+									//Undo Move:
+									//board.undoMove({ i, j, x, y });
+									Board_Grid[i][j].Chess_Piece = Temp;
+									Board_Grid[i][j].Has_A_Piece = 1;
+									if (board.Board_Grid[x][y].Has_A_kill_Move)
+										Board_Grid[x][y].Has_A_Piece = 1;
+
+									maxEval = max(maxEval, eval);
+								}
+							}
+						}
+						board.Board_Grid[i][j].Chess_Piece->Valid_Moves(board.Board_Grid, i, j, false);
+					}
+				}
+			}
+			return maxEval;
+		}
+		else {
+			int minEval = INT_MAX;
+			for (int i = 0; i < 8; ++i) {
+				for (int j = 0; j < 8; ++j) {
+					if (board.Board_Grid[i][j].Chess_Piece && board.Board_Grid[i][j].Chess_Piece->Piece_Color == 'B') {  // Human's color
+						board.Board_Grid[i][j].Chess_Piece->Valid_Moves(board.Board_Grid, i, j, true);
+						for (int x = 0; x < 8; ++x) {
+							for (int y = 0; y < 8; ++y) {
+								if (board.Board_Grid[x][y].has_a_Valid_Move || board.Board_Grid[x][y].Has_A_kill_Move) {
+									// Simulate the move
+									board.makeMove({ i, j, x, y });
+									int eval = minimax(board, depth - 1, true);
+									board.undoMove({ i, j, x, y });
+									minEval = std::min(minEval, eval);
+								}
+							}
+						}
+						board.Board_Grid[i][j].Chess_Piece->Valid_Moves(board.Board_Grid, i, j, false);
+					}
+				}
+			}
+			return minEval;
+		}
+	}
+
+	int evaluate() const {
+		int score = 0;
+		for (int i = 0; i < 8; ++i) {
+			for (int j = 0; j < 8; ++j) {
+				if (Board_Grid[i][j].Chess_Piece) {
+					Piece* piece = Board_Grid[i][j].Chess_Piece;
+					int pieceValue = getPieceValue(piece->Piece_Name);
+					score += (piece->Piece_Color == 'W') ? pieceValue : -pieceValue;
+				}
+			}
+		}
+		return score;
+	}
+
 	COORD Get_King_Pos(char Color) {
 		COORD King_Pos;
 		for (int x = 0; x < 8; x++)
@@ -1075,35 +1316,29 @@ int main(int argc, char* argv[]) {
 	Chess.load_Pawn();
 	while (true) {
 		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT) {
-				//	//SDL_DestroyTexture(buttonTextTexture);
-				//	//SDL_FreeSurface(buttonTextSurface);
-				//	SDL_DestroyRenderer(renderer);
-				//	SDL_DestroyWindow(window);
-				//	SDL_Quit();
-				exit(0);
-				return 0;
-			}
+			//if (event.type == SDL_QUIT) {
+			//	//	//SDL_DestroyTexture(buttonTextTexture);
+			//	//	//SDL_FreeSurface(buttonTextSurface);
+			//	//	SDL_DestroyRenderer(renderer);
+			//	//	SDL_DestroyWindow(window);
+			//	//	SDL_Quit();
+			//	exit(0);
+			//	return 0;
+			//}
 			if (event.type == SDL_MOUSEMOTION)	//Mouse is hovering
 			{
 				SDL_GetMouseState(&MouseX, &MouseY);
 				Chess.Check_for_Hovering(MouseX, MouseY);
 			}
-			if (event.type == SDL_MOUSEBUTTONUP)	//mouse click on Button
-			{
-				SDL_GetMouseState(&MouseX, &MouseY);
-			}
 			if (event.type == SDL_MOUSEBUTTONDOWN) {	//mouse click on Button
 				SDL_GetMouseState(&MouseX, &MouseY);
 				Chess.Check_for_Input(MouseX, MouseY);
-
-
 			}
 		}
 		SDL_SetRenderDrawColor(renderer, 130, 214, 240, 50);
 		SDL_RenderClear(renderer);
 		Chess.Create_Board();
-		Chess.display_Chess_Pieces();
+		//Chess.display_Chess_Pieces();	//dont remember why did i make this function
 		SDL_RenderPresent(renderer);	//Final Output to SDL window
 
 		//SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
